@@ -31,6 +31,29 @@ void liberaCandidato(Candidato *c) {
     }
 }
 
+int checaRepresentados(int representado[], int l) {
+    for (int i = 0; i < l; i++) {
+        if (!representado[i]) // retorna 0 se algum grupo não está representado
+            return 0;
+    }
+    return 1; // retorna 1 se todos os grupos estão representados
+}
+
+int boundDada(int tamanhoAtual) {
+    
+}
+
+void branchAndBound() {
+    if (checaRepresentados(representado, l)) {
+        if (tamanhoAtual < melhorTamanho) {
+            melhorTamanho = tamanhoAtual;
+            for (int i = 0; i < tamanhoAtual; i++) {
+                melhorSolucao[i] = solucaoAtual[i];
+            }
+        }
+    }
+}
+
 int main() {
     int l, n, tam, g;
 
@@ -38,6 +61,7 @@ int main() {
         fprintf(stderr, "Erro ao ler l e n.\n");
         return 1;
     }
+    int representado[l] = {0};
 
     Candidato **candidatos = malloc(sizeof(Candidato*) * n);
     if (!candidatos) {
