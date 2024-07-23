@@ -39,18 +39,15 @@ int checaRepresentados(int representado[], int l) {
     return 1; // retorna 1 se todos os grupos estão representados
 }
 
-//int boundDada(int tamanhoAtual) {
-    
-//}
-
-void branchAndBound(int n, int l, Candidato **candidatos, int *representado, Candidato **solucaoAtual, int tamanhoAtual, Candidato **melhorSolucao, int melhorTamanho) {
+void branchAndBound(int n, int l, Candidato **candidatos, int *representado, Candidato **solucaoAtual, int tamanhoAtual, Candidato **melhorSolucao, int *melhorTamanho) {
     if (checaRepresentados(representado, l)) {
-        if (tamanhoAtual < melhorTamanho) {
-            melhorTamanho = tamanhoAtual;
+        if (tamanhoAtual < *melhorTamanho) {
+            *melhorTamanho = tamanhoAtual;
             for (int i = 0; i < tamanhoAtual; i++) {
                 melhorSolucao[i] = solucaoAtual[i];
             }
         }
+        return;
     }
 
     for (int i = 0; i < n; i++) {
@@ -58,9 +55,9 @@ void branchAndBound(int n, int l, Candidato **candidatos, int *representado, Can
         int countNovosGrupos = 0;
         for (int j = 0; j < candidatos[i]->tam; j++) {
             int grupo = candidatos[i]->grupos[j];
-            if (!representado[grupo]) {
-                representado[grupo] = 1;
-                novosGrupos[countNovosGrupos++] = grupo;
+            if (!representado[grupo - 1]) { // Ajusta o índice do grupo para 0-based
+                representado[grupo - 1] = 1;
+                novosGrupos[countNovosGrupos++] = grupo - 1; // Ajusta o índice do grupo para 0-based
             }
         }
         if (countNovosGrupos > 0) {
@@ -80,7 +77,11 @@ int main() {
         fprintf(stderr, "Erro ao ler l e n.\n");
         return 1;
     }
-    int representado[l], melhorTamanho = n, melhorSolucao[n];
+    int representado[l];
+    for (int i = 0; i < l; i++) representado[i] = 0;
+
+    int melhorTamanho = n;
+    Candidato *melhorSolucao[n];
     Candidato **candidatos = malloc(sizeof(Candidato*) * n);
     if (!candidatos) {
         fprintf(stderr, "Erro ao alocar memória para o array de candidatos.\n");
@@ -115,7 +116,17 @@ int main() {
         }
     }
 
-    
+    Candidato *solucaoAtual[n];
+    branchAndBound(n, l, candidatos, representado, solucaoAtual, 0, melhorSolucao, &melhorTamanho);
+
+    if (melhorTamanho < n) {
+        printf("Melhor solução encontrada com %d candidatos:\n", melhorTamanho);
+        for (int i = 0; i < melhorTamanho; i++) {
+            printf("Candidato %ld\n", melhorSolucao[i] - candidatos[0] + 1); // Imprime o índice do candidato
+        }
+    } else {
+        printf("Nenhuma solução encontrada.\n");
+    }
 
     for (int i = 0; i < n; i++) {
         liberaCandidato(candidatos[i]);
