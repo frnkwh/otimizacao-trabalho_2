@@ -6,6 +6,8 @@ typedef struct {
     int *grupos;
 } Candidato;
 
+Candidato *melhorSolucao = NULL;
+
 Candidato* alocaCandidato(int tam) {
     Candidato *c = malloc(sizeof(Candidato));
     if (!c) {
@@ -43,32 +45,53 @@ int checaRepresentados(int representado[], int l) {
     
 //}
 
-void branchAndBound(int n, int l, Candidato **candidatos, int *representado, Candidato **solucaoAtual, int tamanhoAtual, Candidato **melhorSolucao, int melhorTamanho) {
-    if (checaRepresentados(representado, l)) {
-        if (tamanhoAtual < melhorTamanho) {
-            melhorTamanho = tamanhoAtual;
-            for (int i = 0; i < tamanhoAtual; i++) {
-                melhorSolucao[i] = solucaoAtual[i];
-            }
-        }
+//void branchAndBound(int n, int l, Candidato **candidatos, int **representado, Candidato **solucaoAtual, int tamanhoAtual, Candidato **melhorSolucao, int *melhorTamanho) {
+//    if (checaRepresentados(representado, l)) {
+//        if (tamanhoAtual < melhorTamanho) {
+//            *melhorTamanho = tamanhoAtual;
+//            for (int i = 0; i < tamanhoAtual; i++) {
+//                melhorSolucao[i] = solucaoAtual[i];
+//            }
+//        }
+//    }
+
+//    for (int i = 0; i < n; i++) {
+//        int novosGrupos[l];
+//        int countNovosGrupos = 0;
+//        for (int j = 0; j < candidatos[i]->tam; j++) {
+//            int grupo = candidatos[i]->grupos[j];
+//            if (!representado[grupo]) {
+//                representado[grupo] = 1;
+//                novosGrupos[countNovosGrupos++] = grupo;
+//            }
+//        }
+//        if (countNovosGrupos > 0) {
+//            solucaoAtual[tamanhoAtual] = candidatos[i];
+//            branchAndBound(n, l, candidatos, representado, solucaoAtual, tamanhoAtual + 1, melhorSolucao, melhorTamanho);
+//
+//            for (int j = 0; j < countNovosGrupos; j++)
+//                representado[novosGrupos[j]] = 0;
+//        }
+//    }
+//}
+
+void semViabilidade(Candidato **candidatos, ) {
+    Candidato *temp;
+
+    nodosAcessados++; //sera?
+    while (i < n) {
+        temp = candidatos[i];
+        insereSolucao(temp, solucaoAtual);
+        semViabilidade(candidatos, solucaoAtual, n, i + 1);
+        removeUltimo(solucaoAtual);
+        nodosAcessados++;
     }
 
-    for (int i = 0; i < n; i++) {
-        int novosGrupos[l];
-        int countNovosGrupos = 0;
-        for (int j = 0; j < candidatos[i]->tam; j++) {
-            int grupo = candidatos[i]->grupos[j];
-            if (!representado[grupo]) {
-                representado[grupo] = 1;
-                novosGrupos[countNovosGrupos++] = grupo;
-            }
-        }
-        if (countNovosGrupos > 0) {
-            solucaoAtual[tamanhoAtual] = candidatos[i];
-            branchAndBound(n, l, candidatos, representado, solucaoAtual, tamanhoAtual + 1, melhorSolucao, melhorTamanho);
-
-            for (int j = 0; j < countNovosGrupos; j++)
-                representado[novosGrupos[j]] = 0;
+    if(temTodosGrupos(solucaoAtual)) {
+        if (solucaoAtual->tam < melhorSolucao->tam) {
+            //talvez um memset pra zerar o vetor da melhorSolucao
+            copia(solucaoAtual, melhorSolucao);
+            melhorSolucao->tam = solucaoAtual->tam
         }
     }
 }
@@ -80,8 +103,13 @@ int main() {
         fprintf(stderr, "Erro ao ler l e n.\n");
         return 1;
     }
-    int representado[l], melhorTamanho = n, melhorSolucao[n];
-    Candidato **candidatos = malloc(sizeof(Candidato*) * n);
+    int representado[l];
+
+    if (!melhorSolucao) {
+        fprintf(stderr, "Erro ao alocar memória para o array de melhorSolucao");
+    }
+
+    Candidato *candidatos = malloc(sizeof(Candidato) * n);
     if (!candidatos) {
         fprintf(stderr, "Erro ao alocar memória para o array de candidatos.\n");
         return 1;
@@ -115,7 +143,11 @@ int main() {
         }
     }
 
-    
+    melhorSolucao = malloc(sizeof(Candidato) * n);
+    for (int i = 0, i < n; i++) {
+        melhorSolucao[i] = candidatos[i];
+    }
+    melhorSolucao->tam = candidatos->tam;
 
     for (int i = 0; i < n; i++) {
         liberaCandidato(candidatos[i]);
