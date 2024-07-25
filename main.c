@@ -12,8 +12,6 @@ typedef struct {
     Candidato *candidatos;
 } VetorCandidatos;
 
-VetorCandidatos melhorSolucao;
-
 Candidato alocaCandidato(int tam) {
     Candidato c;
 
@@ -35,11 +33,14 @@ Candidato alocaCandidato(int tam) {
 //    }
 //}
 
-void liberaVetorCandidatos(VetorCandidatos v) {
-    for (int i = 0; i < v.tamCandidatos; i++) {
-        free(v.candidatos[i].grupos);
+void liberaVetorCandidatos(VetorCandidatos *v, int n) {
+    for (int i = 0; i < n; i++) {
+        if (v->candidatos[i].grupos) {
+            free(v->candidatos[i].grupos);
+        }
     }
-    free(v.candidatos);
+    free(v->candidatos);
+    free(v);
 }
 
 int checaRepresentados(int representado[], int l) {
@@ -50,41 +51,8 @@ int checaRepresentados(int representado[], int l) {
     return 1; // retorna 1 se todos os grupos estão representados
 }
 
-//int boundDada(int tamanhoAtual) {
-
-//}
-
-//void branchAndBound(int n, int l, Candidato **candidatos, int **representado, Candidato **solucaoAtual, int tamanhoAtual, Candidato **melhorSolucao, int *melhorTamanho) {
-//    if (checaRepresentados(representado, l)) {
-//        if (tamanhoAtual < melhorTamanho) {
-//            *melhorTamanho = tamanhoAtual;
-//            for (int i = 0; i < tamanhoAtual; i++) {
-//                melhorSolucao[i] = solucaoAtual[i];
-//            }
-//        }
-//    }
-
-//    for (int i = 0; i < n; i++) {
-//        int novosGrupos[l];
-//        int countNovosGrupos = 0;
-//        for (int j = 0; j < candidatos[i]->tam; j++) {
-//            int grupo = candidatos[i]->grupos[j];
-//            if (!representado[grupo]) {
-//                representado[grupo] = 1;
-//                novosGrupos[countNovosGrupos++] = grupo;
-//            }
-//        }
-//        if (countNovosGrupos > 0) {
-//            solucaoAtual[tamanhoAtual] = candidatos[i];
-//            branchAndBound(n, l, candidatos, representado, solucaoAtual, tamanhoAtual + 1, melhorSolucao, melhorTamanho);
-//
-//            for (int j = 0; j < countNovosGrupos; j++)
-//                representado[novosGrupos[j]] = 0;
-//        }
-//    }
-//}
-void insereSolucao(Candidato c, VetorCandidatos *solucao) {
-    solucao->candidatos[solucao->tamCandidatos] = c;
+void insereSolucao(Candidato c, VetorCandidatos *solucao, int i) {
+    solucao->candidatos[i] = c;
     solucao->tamCandidatos++;
 }
 
@@ -92,13 +60,35 @@ void removeUltimo(VetorCandidatos *solucao) {
     solucao->tamCandidatos--;
 }
 
-void copiaVetorCandidatos(VetorCandidatos *solucaoAtual) {
+void copiaVetorCandidatos(VetorCandidatos *solucaoAtual, VetorCandidatos *melhorSolucao) {
     for (int i = 0; i < solucaoAtual->tamCandidatos; i++) {
-        melhorSolucao.candidatos[i] = solucaoAtual->candidatos[i];
+        melhorSolucao->candidatos[i] = solucaoAtual->candidatos[i];
     }
-    melhorSolucao.tamCandidatos = solucaoAtual->tamCandidatos;
+    melhorSolucao->tamCandidatos = solucaoAtual->tamCandidatos;
 }
+/*
+void copiaVetorCandidatos(VetorCandidatos *solucaoAtual, VetorCandidatos *melhorSolucao) {
+    // Alocar memória para candidatos em melhorSolucao se necessário
+    if (melhorSolucao->candidatos == NULL) {
+        melhorSolucao->candidatos = malloc(sizeof(Candidato) * solucaoAtual->tamCandidatos);
+    }
 
+    for (int i = 0; i < solucaoAtual->tamCandidatos; i++) {
+        // Copiar a estrutura do candidato
+        melhorSolucao->candidatos[i] = solucaoAtual->candidatos[i];
+
+        // Alocar memória para os grupos em melhorSolucao se necessário
+        if (melhorSolucao->candidatos[i].grupos == NULL) {
+            melhorSolucao->candidatos[i].grupos = malloc(sizeof(int) * solucaoAtual->candidatos[i].tam);
+        }
+
+        // Copiar os grupos usando memcpy
+        memcpy(melhorSolucao->candidatos[i].grupos, solucaoAtual->candidatos[i].grupos, sizeof(int) * solucaoAtual->candidatos[i].tam);
+    }
+
+    melhorSolucao->tamCandidatos = solucaoAtual->tamCandidatos;
+}
+*/
 int temTodosGrupos(VetorCandidatos *solucaoAtual, int l) {
     int representado[l];
     for (int i = 0; i < l; i++) {
@@ -114,23 +104,50 @@ int temTodosGrupos(VetorCandidatos *solucaoAtual, int l) {
 
     return checaRepresentados(representado, l);
 }
-
-void semViabilidade(VetorCandidatos *vetorCandidatos, VetorCandidatos *solucaoAtual, int l, int n, int i) {
+/*
+void semViabilidade(VetorCandidatos *vetorCandidatos, VetorCandidatos *solucaoAtual, VetorCandidatos *melhorSolucao, int l, int n, int i) {
     Candidato temp;
 
+    printf("entrou pela %d vez \n", i + 1);
+
+    if (i > n)
+        return;
     //nodosAcessados++; //sera?
     while (i < n) {
         temp = vetorCandidatos->candidatos[i];
         insereSolucao(temp, solucaoAtual); //passar i talvez
-        semViabilidade(vetorCandidatos, solucaoAtual, l, n, i + 1);
+        semViabilidade(vetorCandidatos, solucaoAtual, melhorSolucao, l, n, i + 1);
         removeUltimo(solucaoAtual);
         //nodosAcessados++;
     }
 
     if(temTodosGrupos(solucaoAtual, l)) {
-        if (solucaoAtual->tamCandidatos < melhorSolucao.tamCandidatos) {
+        if (solucaoAtual->tamCandidatos < melhorSolucao->tamCandidatos) {
             //talvez um memset pra zerar o vetor da melhorSolucao
-            copiaVetorCandidatos(solucaoAtual);
+            copiaVetorCandidatos(solucaoAtual, melhorSolucao);
+        }
+    }
+}
+*/
+void semViabilidade(VetorCandidatos *vetorCandidatos, VetorCandidatos *solucaoAtual, VetorCandidatos *melhorSolucao, int l, int n, int i) {
+    Candidato temp;
+
+    printf("entrou pela %d vez \n", i);
+
+    if (i >= n - 1)
+        return;
+
+    for (int j = i; j < n; j++) {
+        temp = vetorCandidatos->candidatos[j];
+        insereSolucao(temp, solucaoAtual, i); //passar i talvez
+        semViabilidade(vetorCandidatos, solucaoAtual, melhorSolucao, l, n, j + 1);
+        removeUltimo(solucaoAtual);
+    }
+
+    if (temTodosGrupos(solucaoAtual, l)) {
+        if (solucaoAtual->tamCandidatos < melhorSolucao->tamCandidatos) {
+            //talvez um memset pra zerar o vetor da melhorSolucao
+            copiaVetorCandidatos(solucaoAtual, melhorSolucao);
         }
     }
 }
@@ -143,9 +160,13 @@ int main() {
         return 1;
     }
 
-    VetorCandidatos vetorCandidatos;
-    vetorCandidatos.tamCandidatos = n;
-    vetorCandidatos.candidatos = malloc(sizeof(Candidato) * n);
+    VetorCandidatos *vetorCandidatos = NULL, *solucaoAtual = NULL, *melhorSolucao = NULL;
+    vetorCandidatos = malloc(sizeof(VetorCandidatos));
+    vetorCandidatos->candidatos = malloc(sizeof(Candidato) * n);
+    vetorCandidatos->tamCandidatos = n;
+    solucaoAtual = malloc(sizeof(VetorCandidatos));
+    solucaoAtual->candidatos = malloc(sizeof(Candidato) * n);
+    solucaoAtual->tamCandidatos = 0;
 
     for (int i = 0; i < n; i++) {
         if (scanf("%d", &tam) != 1) {
@@ -153,14 +174,16 @@ int main() {
             return 1;
         }
 
-        vetorCandidatos.candidatos[i].tam = tam;
-        vetorCandidatos.candidatos[i].grupos = malloc(sizeof(int) * l);
-        if (!vetorCandidatos.candidatos[i].grupos) {
+        vetorCandidatos->candidatos[i].tam = tam;
+        vetorCandidatos->candidatos[i].grupos = malloc(sizeof(int) * l);
+        solucaoAtual->candidatos[i].grupos = malloc(sizeof(int) * l);
+
+        if (!vetorCandidatos->candidatos[i].grupos) {
             //for (int j = 0; j < i; j++) {
                 //liberaCandidato(vetorCandidatos.candidatos[j]);
-                free(vetorCandidatos.candidatos[i].grupos);
+                free(vetorCandidatos->candidatos[i].grupos);
             //}
-            free(vetorCandidatos.candidatos);
+            free(vetorCandidatos->candidatos);
             return 1;
         }
 
@@ -170,10 +193,10 @@ int main() {
                 //for (int k = 0; k <= i; k++) {
                 //    liberaCandidato(vetorCandidatos.candidatos[k]);
                 //}
-                free(vetorCandidatos.candidatos);
+                free(vetorCandidatos->candidatos);
                 return 1;
             }
-            vetorCandidatos.candidatos[i].grupos[j] = g;
+            vetorCandidatos->candidatos[i].grupos[j] = g;
         }
     }
 
@@ -187,29 +210,33 @@ int main() {
         melhorSolucao.candidatos[i] = vetorCandidatos.candidatos[i];
     }
     */
-    melhorSolucao.tamCandidatos = vetorCandidatos.tamCandidatos;
-    melhorSolucao.candidatos = malloc(sizeof(Candidato) * n);
+    melhorSolucao = malloc(sizeof(VetorCandidatos));
+    melhorSolucao->tamCandidatos = vetorCandidatos->tamCandidatos;
+    melhorSolucao->candidatos = malloc(sizeof(Candidato) * n);
 
-    if (!melhorSolucao.candidatos) {
+    if (!melhorSolucao->candidatos) {
         fprintf(stderr, "Erro ao alocar memória para melhorSolucao.\n");
-        liberaVetorCandidatos(vetorCandidatos);
+        liberaVetorCandidatos(vetorCandidatos, n);
         return 1;
     }
 
     for (int i = 0; i < n; i++) {
-        melhorSolucao.candidatos[i].tam = vetorCandidatos.candidatos[i].tam;
-        melhorSolucao.candidatos[i].grupos = malloc(sizeof(int) * l);
-        if (!melhorSolucao.candidatos[i].grupos) {
+        melhorSolucao->candidatos[i].tam = vetorCandidatos->candidatos[i].tam;
+        melhorSolucao->candidatos[i].grupos = malloc(sizeof(int) * l);
+        if (!melhorSolucao->candidatos[i].grupos) {
             fprintf(stderr, "Erro ao alocar memória para grupos do melhorSolucao %d.\n", i);
-            liberaVetorCandidatos(vetorCandidatos);
-            liberaVetorCandidatos(melhorSolucao);
+            liberaVetorCandidatos(vetorCandidatos, n);
+            liberaVetorCandidatos(melhorSolucao, n);
             return 1;
         }
-        memcpy(melhorSolucao.candidatos[i].grupos, vetorCandidatos.candidatos[i].grupos, sizeof(int) * vetorCandidatos.candidatos[i].tam);
+        memcpy(melhorSolucao->candidatos[i].grupos, vetorCandidatos->candidatos[i].grupos, sizeof(int) * vetorCandidatos->candidatos[i].tam);
     }
 
-    liberaVetorCandidatos(vetorCandidatos);
-    liberaVetorCandidatos(melhorSolucao);
+    semViabilidade(vetorCandidatos, solucaoAtual, melhorSolucao, l, n, 0);
+
+    liberaVetorCandidatos(vetorCandidatos, n);
+    liberaVetorCandidatos(solucaoAtual, n);
+    liberaVetorCandidatos(melhorSolucao, n);
     //for (int i = 0; i < melhorSolucao.tamCandidatos; i++) {
     //    free(melhorSolucao.candidatos[i].grupos);
     //}
