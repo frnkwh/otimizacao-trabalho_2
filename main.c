@@ -1,16 +1,21 @@
+//TODOs 
+//verificar com a ajuda do chatgpt se minha função de bound foi feita da maneira correta
+//testar com instâncias maiores
+//verificar se precisa ordenar eles (bem provável que sim)
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <getopt.h>
+#include <time.h>
 
 typedef struct {
     int id;
-    int* grupos;
+    int *grupos;
     int num_grupos;
 } Candidato;
 
 typedef struct {
-    Candidato* candidatos;
+    Candidato *candidatos;
     int num_candidatos;
     int capacidade;
 } CandidatoList;
@@ -27,15 +32,23 @@ typedef struct {
 
 Flags flags = {true, true, true};
 
+int nosVisitadosBranchAndBound = 0;
+int nosVisitadosBacktracking = 0;
+int nosVisitadosSemViabilidade = 0;
+int nosVisitados = 0;
+
 Candidato criarCandidato(int id, int* grupos, int num_grupos);
 CandidatoList criarCandidatoList(int capacidade);
 void adicionarCandidato(CandidatoList* lista, Candidato candidato);
 bool cobrirTodosGrupos(CandidatoList* lista, int* gruposNecessarios, int numGruposNecessarios);
+void encontrarMenorConjuntoBranchAndBoundProf(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index);
 void encontrarMenorConjuntoBranchAndBound(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index);
 void encontrarMenorConjunto(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index);
+void encontrarMenorConjuntoSemViabilidade(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index);
 void imprimirCandidatoList(CandidatoList lista);
 void liberarCandidatoList(CandidatoList* lista);
 int Bdada(CandidatoList* atual, int* gruposNecessarios, int numGruposNecessarios);
+int Bminha(CandidatoList *atual, Candidato proximo, int *gruposNecessarios, int numGruposNecessarios); 
 
 // Função para criar um candidato
 Candidato criarCandidato(int id, int* grupos, int num_grupos) {
@@ -96,12 +109,49 @@ bool cobrirTodosGrupos(CandidatoList* lista, int* gruposNecessarios, int numGrup
 }
 
 // Função de Branch and Bound para encontrar o menor conjunto de candidatos que cubra todos os grupos
-void encontrarMenorConjuntoBranchAndBound(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index) {
+void encontrarMenorConjuntoBranchAndBoundProf(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index) {
+    nosVisitadosBranchAndBound++;
+
     if (index >= todos->num_candidatos) {
         return;
     }
 
     int bound = Bdada(atual, gruposNecessarios, numGruposNecessarios);
+    if (melhor->num_candidatos != 0 && bound >= melhor->num_candidatos) {
+        return; // Podar ramo
+    }
+
+    // Explora a solução incluindo o candidato atual
+    adicionarCandidato(atual, todos->candidatos[index]);
+    if (cobrirTodosGrupos(atual, gruposNecessarios, numGruposNecessarios)) {
+        if (melhor->num_candidatos == 0 || atual->num_candidatos < melhor->num_candidatos) {
+            liberarCandidatoList(melhor);
+            *melhor = criarCandidatoList(atual->num_candidatos);
+            for (int i = 0; i < atual->num_candidatos; i++) {
+                Candidato candidatoAtual = atual->candidatos[i];
+                int* grupos = (int*) malloc(candidatoAtual.num_grupos * sizeof(int));
+                for (int j = 0; j < candidatoAtual.num_grupos; j++) {
+                    grupos[j] = candidatoAtual.grupos[j];
+                }
+                adicionarCandidato(melhor, criarCandidato(candidatoAtual.id, grupos, candidatoAtual.num_grupos));
+                free(grupos);
+            }
+        }
+    }
+
+    encontrarMenorConjuntoBranchAndBoundProf(todos, atual, melhor, gruposNecessarios, numGruposNecessarios, index + 1);
+    atual->num_candidatos--;
+    encontrarMenorConjuntoBranchAndBoundProf(todos, atual, melhor, gruposNecessarios, numGruposNecessarios, index + 1);
+}
+
+void encontrarMenorConjuntoBranchAndBound(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index) {
+    nosVisitadosBranchAndBound++;
+
+    if (index >= todos->num_candidatos) {
+        return;
+    }
+
+    int bound = Bminha(atual, todos->candidatos[index], gruposNecessarios, numGruposNecessarios);
     if (melhor->num_candidatos != 0 && bound >= melhor->num_candidatos) {
         return; // Podar ramo
     }
@@ -131,6 +181,8 @@ void encontrarMenorConjuntoBranchAndBound(CandidatoList* todos, CandidatoList* a
 
 // Função de backtracking para encontrar o menor conjunto de candidatos que cubra todos os grupos
 void encontrarMenorConjunto(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index) {
+    nosVisitadosBacktracking++;
+
     if (cobrirTodosGrupos(atual, gruposNecessarios, numGruposNecessarios)) {
         if (melhor->num_candidatos == 0 || atual->num_candidatos < melhor->num_candidatos) {
             liberarCandidatoList(melhor); // Liberar a lista anterior antes de substituir
@@ -159,7 +211,198 @@ void encontrarMenorConjunto(CandidatoList* todos, CandidatoList* atual, Candidat
     encontrarMenorConjunto(todos, atual, melhor, gruposNecessarios, numGruposNecessarios, index + 1);
 }
 
-// Função para calcular a função limitante Bdada
+// Função ineficiente que verifica viabilidade apenas no final
+void encontrarMenorConjuntoSemViabilidade(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index) {
+    nosVisitadosSemViabilidade++;
+
+    if (index == todos->num_candidatos) {
+        if (cobrirTodosGrupos(atual, gruposNecessarios, numGruposNecessarios)) {
+            if (melhor->num_candidatos == 0 || atual->num_candidatos < melhor->num_candidatos) {
+                liberarCandidatoList(melhor); // Liberar a lista anterior antes de substituir
+                *melhor = criarCandidatoList(atual->num_candidatos);
+                for (int i = 0; i < atual->num_candidatos; i++) {
+                    // Copiando cada candidato completamente
+                    Candidato candidatoAtual = atual->candidatos[i];
+                    int* grupos = (int*) malloc(candidatoAtual.num_grupos * sizeof(int));
+                    for (int j = 0; j < candidatoAtual.num_grupos; j++) {
+                        grupos[j] = candidatoAtual.grupos[j];
+                    }
+                    adicionarCandidato(melhor, criarCandidato(candidatoAtual.id, grupos, candidatoAtual.num_grupos));
+                    free(grupos); // Liberar memória temporária
+                }
+            }
+        }
+        return;
+    }
+
+    adicionarCandidato(atual, todos->candidatos[index]);
+    encontrarMenorConjuntoSemViabilidade(todos, atual, melhor, gruposNecessarios, numGruposNecessarios, index + 1);
+    atual->num_candidatos--;
+    encontrarMenorConjuntoSemViabilidade(todos, atual, melhor, gruposNecessarios, numGruposNecessarios, index + 1);
+}
+/*
+void encontrarMenorConjuntoGeral(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index) {
+    nosVisitados++;
+
+    if (!flags.viabilidade && index == todos->num_candidatos) {
+        if (cobrirTodosGrupos(atual, gruposNecessarios, numGruposNecessarios)) {
+            if (melhor->num_candidatos == 0 || atual->num_candidatos < melhor->num_candidatos) {
+                liberarCandidatoList(melhor); // Liberar a lista anterior antes de substituir
+                *melhor = criarCandidatoList(atual->num_candidatos);
+                for (int i = 0; i < atual->num_candidatos; i++) {
+                    // Copiando cada candidato completamente
+                    Candidato candidatoAtual = atual->candidatos[i];
+                    int* grupos = (int*) malloc(candidatoAtual.num_grupos * sizeof(int));
+                    for (int j = 0; j < candidatoAtual.num_grupos; j++) {
+                        grupos[j] = candidatoAtual.grupos[j];
+                    }
+                    adicionarCandidato(melhor, criarCandidato(candidatoAtual.id, grupos, candidatoAtual.num_grupos));
+                    free(grupos); // Liberar memória temporária
+                }
+            }
+        }
+        return;
+    }
+
+    if (flags.otimalidade) {
+        int bound;
+        if (!flags.funcao_limitante) {
+            bound = Bdada(atual, gruposNecessarios, numGruposNecessarios);
+        } else {
+            bound = Bminha(atual, todos->candidatos[index], gruposNecessarios, numGruposNecessarios);
+        }
+        if (melhor->num_candidatos != 0 && bound >= melhor->num_candidatos) {
+            return; // Podar ramo
+        }
+        adicionarCandidato(atual, todos->candidatos[index]);
+    }
+
+    if (cobrirTodosGrupos(atual, gruposNecessarios, numGruposNecessarios)) {
+        if (melhor->num_candidatos == 0 || atual->num_candidatos < melhor->num_candidatos) {
+            liberarCandidatoList(melhor); // Liberar a lista anterior antes de substituir
+            *melhor = criarCandidatoList(atual->num_candidatos);
+            for (int i = 0; i < atual->num_candidatos; i++) {
+                // Copiando cada candidato completamente
+                Candidato candidatoAtual = atual->candidatos[i];
+                int* grupos = (int*) malloc(candidatoAtual.num_grupos * sizeof(int));
+                for (int j = 0; j < candidatoAtual.num_grupos; j++) {
+                    grupos[j] = candidatoAtual.grupos[j];
+                }
+                adicionarCandidato(melhor, criarCandidato(candidatoAtual.id, grupos, candidatoAtual.num_grupos));
+                free(grupos); // Liberar memória temporária
+            }
+        }
+        if (!flags.otimalidade)
+            return;
+    }
+
+    if (!flags.otimalidade)
+        adicionarCandidato(atual, todos->candidatos[index]);
+
+    encontrarMenorConjuntoGeral(todos, atual, melhor, gruposNecessarios, numGruposNecessarios, index + 1);
+    atual->num_candidatos--;
+    encontrarMenorConjuntoGeral(todos, atual, melhor, gruposNecessarios, numGruposNecessarios, index + 1);
+
+}
+*/
+
+void encontrarMenorConjuntoGeral(CandidatoList* todos, CandidatoList* atual, CandidatoList* melhor, int* gruposNecessarios, int numGruposNecessarios, int index) {
+    nosVisitados++;
+
+    if (index >= todos->num_candidatos) {
+        return;
+    }
+
+    if (!flags.viabilidade && index == todos->num_candidatos) {
+        if (cobrirTodosGrupos(atual, gruposNecessarios, numGruposNecessarios)) {
+            if (melhor->num_candidatos == 0 || atual->num_candidatos < melhor->num_candidatos) {
+                liberarCandidatoList(melhor); // Liberar a lista anterior antes de substituir
+                *melhor = criarCandidatoList(atual->num_candidatos);
+                for (int i = 0; i < atual->num_candidatos; i++) {
+                    Candidato candidatoAtual = atual->candidatos[i];
+                    int* grupos = (int*) malloc(candidatoAtual.num_grupos * sizeof(int));
+                    for (int j = 0; j < candidatoAtual.num_grupos; j++) {
+                        grupos[j] = candidatoAtual.grupos[j];
+                    }
+                    adicionarCandidato(melhor, criarCandidato(candidatoAtual.id, grupos, candidatoAtual.num_grupos));
+                    free(grupos); // Liberar memória temporária
+                }
+            }
+        }
+        return;
+    }
+
+    if (flags.otimalidade) {
+        int bound;
+        if (index < todos->num_candidatos) {
+            if (!flags.funcao_limitante) {
+                bound = Bdada(atual, gruposNecessarios, numGruposNecessarios);
+            } else {
+                bound = Bminha(atual, todos->candidatos[index], gruposNecessarios, numGruposNecessarios);
+            }
+            if (melhor->num_candidatos != 0 && bound >= melhor->num_candidatos) {
+                return; // Podar ramo
+            }
+            adicionarCandidato(atual, todos->candidatos[index]);
+        }
+    }
+
+    if (cobrirTodosGrupos(atual, gruposNecessarios, numGruposNecessarios)) {
+        if (melhor->num_candidatos == 0 || atual->num_candidatos < melhor->num_candidatos) {
+            liberarCandidatoList(melhor); // Liberar a lista anterior antes de substituir
+            *melhor = criarCandidatoList(atual->num_candidatos);
+            for (int i = 0; i < atual->num_candidatos; i++) {
+                Candidato candidatoAtual = atual->candidatos[i];
+                int* grupos = (int*) malloc(candidatoAtual.num_grupos * sizeof(int));
+                for (int j = 0; j < candidatoAtual.num_grupos; j++) {
+                    grupos[j] = candidatoAtual.grupos[j];
+                }
+                adicionarCandidato(melhor, criarCandidato(candidatoAtual.id, grupos, candidatoAtual.num_grupos));
+                free(grupos); // Liberar memória temporária
+            }
+        }
+        if (!flags.otimalidade)
+            return;
+    }
+
+    if (index < todos->num_candidatos) {
+        if (!flags.otimalidade) {
+            adicionarCandidato(atual, todos->candidatos[index]);
+        }
+
+        encontrarMenorConjuntoGeral(todos, atual, melhor, gruposNecessarios, numGruposNecessarios, index + 1);
+        atual->num_candidatos--;
+    }
+
+    encontrarMenorConjuntoGeral(todos, atual, melhor, gruposNecessarios, numGruposNecessarios, index + 1);
+}
+
+
+// Função para imprimir a lista de candidatos
+void imprimirCandidatoList(CandidatoList lista) {
+    printf("Candidatos selecionados:\n");
+    for (int i = 0; i < lista.num_candidatos; i++) {
+        printf("Candidato %d: Grupos [", lista.candidatos[i].id);
+        for (int j = 0; j < lista.candidatos[i].num_grupos; j++) {
+            printf("%d", lista.candidatos[i].grupos[j]);
+            if (j < lista.candidatos[i].num_grupos - 1) {
+                printf(", ");
+            }
+        }
+        printf("]\n");
+    }
+}
+
+// Função para liberar a memória alocada pela lista de candidatos
+void liberarCandidatoList(CandidatoList* lista) {
+    for (int i = 0; i < lista->num_candidatos; i++) {
+        free(lista->candidatos[i].grupos);
+    }
+    free(lista->candidatos);
+    lista->num_candidatos = 0;
+    lista->capacidade = 0;
+}
+
 int Bdada(CandidatoList* atual, int* gruposNecessarios, int numGruposNecessarios) {
     int countCobertos = 0;
     bool* cobertos = (bool*) malloc(numGruposNecessarios * sizeof(bool));
@@ -187,29 +430,47 @@ int Bdada(CandidatoList* atual, int* gruposNecessarios, int numGruposNecessarios
     return atual->num_candidatos + (countCobertos == numGruposNecessarios ? 0 : 1);
 }
 
-// Função para imprimir a lista de candidatos
-void imprimirCandidatoList(CandidatoList lista) {
-    printf("Candidatos selecionados:\n");
-    for (int i = 0; i < lista.num_candidatos; i++) {
-        printf("Candidato %d: Grupos [", lista.candidatos[i].id);
-        for (int j = 0; j < lista.candidatos[i].num_grupos; j++) {
-            printf("%d", lista.candidatos[i].grupos[j]);
-            if (j < lista.candidatos[i].num_grupos - 1) {
-                printf(", ");
+int Bminha(CandidatoList *atual, Candidato proximo, int *gruposNecessarios, int numGruposNecessarios) {
+    int countCobertos = 0;
+    bool* cobertos = (bool*) malloc(numGruposNecessarios * sizeof(bool));
+    for (int i = 0; i < numGruposNecessarios; i++) {
+        cobertos[i] = false;
+    }
+
+    for (int i = 0; i < atual->num_candidatos; i++) {
+        for (int j = 0; j < atual->candidatos[i].num_grupos; j++) {
+            for (int k = 0; k < numGruposNecessarios; k++) {
+                if (atual->candidatos[i].grupos[j] == gruposNecessarios[k]) {
+                    cobertos[k] = true;
+                }
             }
         }
-        printf("]\n");
     }
-}
 
-// Função para liberar a memória alocada pela lista de candidatos
-void liberarCandidatoList(CandidatoList* lista) {
-    for (int i = 0; i < lista->num_candidatos; i++) {
-        free(lista->candidatos[i].grupos);
+    for (int i = 0; i < numGruposNecessarios; i++) {
+        if (cobertos[i]) {
+            countCobertos++;
+        }
     }
-    free(lista->candidatos);
-    lista->num_candidatos = 0;
-    lista->capacidade = 0;
+
+    int gruposRestantes = numGruposNecessarios - countCobertos;
+    free(cobertos);
+    //printf("num_grupos do proximo candidato: %d\n", num_grupos);
+    //printf("numGruposNecessarios: %d\n", numGruposNecessarios);
+    //printf("\n");
+
+    if (gruposRestantes == 0) {
+        //printf("+0\n");
+        return atual->num_candidatos;
+    }
+
+    if (proximo.num_grupos >= gruposRestantes) {
+        //printf("+1\n");
+        return atual->num_candidatos + 1;
+    } else {
+        //printf("+2\n");
+        return atual->num_candidatos + 2;
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -235,7 +496,7 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i <= n; i++) {
         int s;
         scanf("%d", &s);
-        int* grupos = (int*) malloc(s * sizeof(int));
+        int *grupos = (int*) malloc(s * sizeof(int));
         for (int j = 0; j < s; j++) {
             scanf("%d", &grupos[j]);
         }
@@ -252,11 +513,48 @@ int main(int argc, char *argv[]) {
     CandidatoList melhorSolucao = criarCandidatoList(n);
     CandidatoList candidatosAtuais = criarCandidatoList(n);
 
-    if (flags.funcao_limitante == false) {
-        encontrarMenorConjuntoBranchAndBound(&todosCandidatos, &candidatosAtuais, &melhorSolucao, gruposNecessarios, l, 0);
-    } else {
+    clock_t inicio, fim;
+    double tempoGasto;
+ 
+    /*
+    if (!flags.viabilidade) {
+        inicio = clock();
+        encontrarMenorConjuntoSemViabilidade(&todosCandidatos, &candidatosAtuais, &melhorSolucao, gruposNecessarios, l, 0);
+        fim = clock();
+        tempoGasto = ((double)(fim - inicio)) / CLOCKS_PER_SEC;
+        printf("Tempo Sem Viabilidade: %f segundos\n", tempoGasto);
+        printf("Nós visitados Sem Viabilidade: %d\n", nosVisitadosSemViabilidade);
+    } else if (!flags.funcao_limitante){
+        inicio = clock();
+        encontrarMenorConjuntoBranchAndBoundProf(&todosCandidatos, &candidatosAtuais, &melhorSolucao, gruposNecessarios, l, 0);
+        fim = clock();
+        tempoGasto = ((double)(fim - inicio)) / CLOCKS_PER_SEC;
+        printf("Tempo Branch and Bound Prof: %f segundos\n", tempoGasto);
+        printf("Nós visitados Branch and Bound Prof: %d\n", nosVisitadosBranchAndBound);
+    } else if (!flags.otimalidade){
+        inicio = clock();
         encontrarMenorConjunto(&todosCandidatos, &candidatosAtuais, &melhorSolucao, gruposNecessarios, l, 0);
+        fim = clock();
+        tempoGasto = ((double)(fim - inicio)) / CLOCKS_PER_SEC;
+        printf("Tempo Backtracking: %f segundos\n", tempoGasto);
+        printf("Nós visitados Backtracking: %d\n", nosVisitadosBacktracking);
+    } else {
+        inicio = clock();
+        encontrarMenorConjuntoBranchAndBound(&todosCandidatos, &candidatosAtuais, &melhorSolucao, gruposNecessarios, l, 0);
+        fim = clock();
+        tempoGasto = ((double)(fim - inicio)) / CLOCKS_PER_SEC;
+        printf("Tempo Branch and Bound: %f segundos\n", tempoGasto);
+        printf("Nós visitados Branch and Bound: %d\n", nosVisitadosBranchAndBound);
+
     }
+    */
+
+    inicio = clock();
+    encontrarMenorConjuntoGeral(&todosCandidatos, &candidatosAtuais, &melhorSolucao, gruposNecessarios, l, 0);
+    fim = clock();
+    tempoGasto = ((double)(fim - inicio)) / CLOCKS_PER_SEC;
+    printf("Tempo: %f segundos\n", tempoGasto);
+    printf("Nós visitados: %d\n", nosVisitados);
 
     if (melhorSolucao.num_candidatos == 0) {
         printf("Inviavel\n");
