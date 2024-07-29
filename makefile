@@ -1,33 +1,40 @@
-# Nome do programa
-PROGRAM = main
-
-# Compilador
+# Define the compiler
 CC = gcc
 
-# Flags de compilação
-CFLAGS = -g -Wall
+# Compiler flags
+CFLAGS = -Wall -Wextra -Werror -g
 
-# Arquivo fonte
-SRC = main.c
+# Source files
+SRCS = candidatos.c main.c
 
-# Arquivo objeto
-OBJ = $(SRC:.c=.o)
+# Header files (for dependency tracking)
+HEADERS = candidatos.h
 
-# Regra padrão
-all: $(PROGRAM)
+# Object files
+OBJS = $(SRCS:.c=.o)
 
-# Regra para compilar o programa
-$(PROGRAM): $(OBJ)
-	$(CC) $(CFLAGS) -o $(PROGRAM) $(OBJ)
+# Executable name
+TARGET = comissao
 
-# Regra para compilar os arquivos objeto
-%.o: %.c
+# Default target
+all: $(TARGET)
+
+# Rule to create the executable
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+
+# Rule to compile .c files to .o files
+%.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Regra para limpar os arquivos objeto e o programa
+# Clean up build files
 clean:
-	rm -f $(OBJ) $(PROGRAM)
+	rm -f $(OBJS) $(TARGET)
 
-# Regra para recompilar tudo
-rebuild: clean all
+# Run the program
+run: $(TARGET)
+	./$(TARGET)
+
+# Phony targets
+.PHONY: all clean run
 

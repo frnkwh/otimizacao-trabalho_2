@@ -1,0 +1,119 @@
+Número de grupos: 10 - 1
+Tempo: 0.014410 segundos
+Nós visitados: 50807
+Tempo: 0.003784 segundos
+Nós visitados: 14359
+
+Número de grupos: 10 - 2
+Tempo: 0.015248 segundos
+Nós visitados: 51887
+Tempo: 0.005747 segundos
+Nós visitados: 19243
+
+Número de grupos: 10 - 3
+Tempo: 0.014509 segundos
+Nós visitados: 43173
+Tempo: 0.003280 segundos
+Nós visitados: 10939
+
+Número de grupos: 10 - 4
+Tempo: 0.003301 segundos
+Nós visitados: 12561
+Tempo: 0.000735 segundos
+Nós visitados: 2739
+
+Número de grupos: 15 - 1
+Tempo: 0.961038 segundos
+Nós visitados: 1628179
+Tempo: 0.198241 segundos
+Nós visitados: 363987
+
+Número de grupos: 15 - 2
+Tempo: 0.933024 segundos
+Nós visitados: 1555031
+Tempo: 0.207197 segundos
+Nós visitados: 371619
+
+Número de grupos: 15 - 3
+Tempo: 1.080198 segundos
+Nós visitados: 1751983
+Tempo: 0.207140 segundos
+Nós visitados: 363971
+
+Número de grupos: 15 - 4
+Tempo: 1.020485 segundos
+Nós visitados: 1638199
+Tempo: 0.206239 segundos
+Nós visitados: 367869
+
+Número de grupos: 20 - 1
+Tempo: 2.454547 segundos
+Nós visitados: 2228025
+Tempo: 0.300567 segundos
+Nós visitados: 301413
+
+Número de grupos: 20 - 2
+Tempo: 3.947737 segundos
+Nós visitados: 3944041
+Tempo: 1.583257 segundos
+Nós visitados: 1721049
+
+Número de grupos: 20 - 3
+Tempo: 0.427440 segundos
+Nós visitados: 408947
+Tempo: 0.213956 segundos
+Nós visitados: 223691
+
+Número de grupos: 20 - 4
+Tempo: 0.261322 segundos
+Nós visitados: 270331
+Tempo: 0.024696 segundos
+Nós visitados: 29087
+
+Número de grupos: 25 - 1
+Tempo: 81.741837 segundos
+Nós visitados: 47601869
+Tempo: 10.996515 segundos
+Nós visitados: 7235497
+
+Número de grupos: 25 - 2
+Tempo: 58.444766 segundos
+Nós visitados: 39628611
+Tempo: 6.537080 segundos
+Nós visitados: 5048951
+
+Número de grupos: 25 - 3
+Tempo: 15.678501 segundos
+Nós visitados: 10683017
+Tempo: 5.283419 segundos
+Nós visitados: 3749127
+
+Número de grupos: 25 - 4
+Tempo: 68.050969 segundos
+Nós visitados: 40466851
+Tempo: 7.762537 segundos
+Nós visitados: 5194163
+
+Número de grupos: 30 - 1
+Tempo: 422.047397 segundos
+Nós visitados: 168771629
+Tempo: 50.134976 segundos
+Nós visitados: 22422717
+
+Número de grupos: 30 - 2
+Tempo: 233.667702 segundos
+Nós visitados: 89469249
+Tempo: 23.651158 segundos
+Nós visitados: 10475049
+
+Número de grupos: 30 - 3
+Tempo: 267.119463 segundos
+Nós visitados: 107403883
+Tempo: 35.125611 segundos
+Nós visitados: 16479345
+
+Número de grupos: 30 - 4
+Tempo: 552.533453 segundos
+Nós visitados: 230442425
+Tempo: 50.520171 segundos
+Nós visitados: 24492579
